@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 namespace qcpc
 {
@@ -47,9 +48,25 @@ namespace qcpc
             var ibuf = new byte[fr.Length];
             fr.Read(ibuf, 0, ibuf.Length);
             fr.Dispose();
-
+                        
             var obuf = Encoding.Convert(srcCP, dstCP, ibuf);
-            
+            var bom = new byte[] { };
+            switch (dstCP.CodePage)
+            {
+                case 1200:
+                    bom = new byte[] { (byte)'\xFF', (byte)'\xFE' };
+                    break;
+                case 1201:
+                    bom = new byte[] { (byte)'\xFE', (byte)'\xFF' };
+                    break;
+                case 65001:
+                    bom = new byte[] { (byte)'\xEF', (byte)'\xBB', (byte)'\xBF' };
+                    break;
+                default:
+                    break;
+            }
+            obuf = bom.Concat(obuf).ToArray();
+
             FileStream fw = null;
             try { fw = new FileStream(dstFile, FileMode.OpenOrCreate); } catch { Console.WriteLine("export file error"); return; }
             fw.SetLength(0);
